@@ -23,6 +23,7 @@ html[data-t="claro"]{
 }
 /* ===== tema ESCURO (padrão) — fundo preto, mesmos tons de rosa e azul ===== */
 html[data-t="escuro"]{
+  color-scheme:dark;
   --bg:#000000; --bg2:#111111;
   --pink:#1A0E14; --pink-mid:#3A1C2A; --pink-deep:#F0529C;
   --blue:#0A0F1C; --blue-mid:#16223D; --blue-deep:#5B93FF;
@@ -142,7 +143,7 @@ h2.pagetitle{font-family:var(--disp);font-weight:600;font-size:26px;letter-spaci
 input,select,textarea{
   font-family:var(--body);font-size:13.5px;color:var(--ink);background:var(--bg2);
   border:1px solid var(--line);border-radius:var(--r3);padding:10px 12px;outline:none;transition:.15s}
-input:focus,select:focus,textarea:focus{border-color:var(--blue-deep);background:#fff}
+input:focus,select:focus,textarea:focus{border-color:var(--blue-deep);background:var(--bg2)}
 .chipbar{display:flex;gap:4px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
   border-radius:999px;padding:4px;width:fit-content;max-width:100%;overflow-x:auto;cursor:grab;user-select:none}
 .chipbar.arrastando{cursor:grabbing}
@@ -396,6 +397,11 @@ canvas.chart{width:100%;display:block}
         </div>
         <button class="btn ghost sm" id="dash-limpar-periodo">Usar mês</button>
       </div>
+    </div>
+
+    <div class="card" id="urban-mix-card">
+      <h3>🏢 Urban Mix — Pró-labore do mês</h3>
+      <div id="urban-mix-corpo"></div>
     </div>
 
     <div class="grid g4" id="dash-stats-principal"></div>
@@ -854,7 +860,8 @@ function dbPadrao(){
     listaHistorico: [],        // {nome,categoria,valor,data}
     contasFixas: [],           // {id,nome,categoria,historico:[{valor,data}]}
     projetos: [],              // {id,nome,orcamento,gasto,data,tipo,prioridade,status,gastos:[{desc,valor,data}]}
-    metas: []                  // {id,nome,descricao,valorNecessario,dataDesejada,categoria,prioridade,responsavel,status,aportes:[{valor,data}]}
+    metas: [],                 // {id,nome,descricao,valorNecessario,dataDesejada,categoria,prioridade,responsavel,status,aportes:[{valor,data}]}
+    urbanMix: {}               // {"YYYY-MM": {proLabore16, proLabore01, gabrielyBase, gabrielyComissaoPct, gabrielyVendas}}
   };
 }
 const instalacaoNova = !localStorage.getItem(DB_KEY);
@@ -931,6 +938,12 @@ async function iniciarSync(){
   try{
     atualizarStatusSync("loading", "Conectando ao Supabase...");
     supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
+    if(window.__authClient){
+      const {data:sessData} = await window.__authClient.auth.getSession();
+      if(sessData && sessData.session){
+        await supabaseClient.auth.setSession({access_token: sessData.session.access_token, refresh_token: sessData.session.refresh_token});
+      }
+    }
     const {data, error} = await supabaseClient.from("portal_dados").select("dados").eq("id", cfg.codigo).maybeSingle();
     if(error) throw error;
     if(data && data.dados){
@@ -1224,6 +1237,62 @@ function renderDashboard(){
   ].map(([cat,lbl])=> statCard(lbl, fmtBRL(catTotal(cat)))).join("");
 
   renderAlertaAtrasados();
+  renderUrbanMix();
+}
+function mesKeyDashboard(){
+  return document.getElementById("dash-mes").value || mesAtual();
+}
+function urbanMixDoMes(mesKey){
+  if(!DB.urbanMix) DB.urbanMix = {};
+  if(!DB.urbanMix[mesKey]){
+    DB.urbanMix[mesKey] = {proLabore16:1150, proLabore01:1150, gabrielyBase:300, gabrielyComissaoPct:3, gabrielyVendas:0};
+  }
+  return DB.urbanMix[mesKey];
+}
+function renderUrbanMix(){
+  const mesKey = mesKeyDashboard();
+  const um = urbanMixDoMes(mesKey);
+  document.getElementById("urban-mix-corpo").innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px">
+      <div>
+        <div style="font-size:12px; color:var(--dim); font-weight:700; margin-bottom:8px">Meu pró-labore</div>
+        <div class="field"><label>Dia 16 (R$)</label><input type="number" step="0.01" min="0" id="um-prolabore16" value="${um.proLabore16}"></div>
+        <div class="field" style="margin-top:8px"><label>Dia 01 (R$)</label><input type="number" step="0.01" min="0" id="um-prolabore01" value="${um.proLabore01}"></div>
+        <div style="margin-top:8px; font-size:13px">Total: <b id="um-total-prolabore"></b></div>
+      </div>
+      <div>
+        <div style="font-size:12px; color:var(--dim); font-weight:700; margin-bottom:8px">Gabrielly — vendedora</div>
+        <div class="field"><label>Fixo (R$)</label><input type="number" step="0.01" min="0" id="um-gab-base" value="${um.gabrielyBase}"></div>
+        <div class="field" style="margin-top:8px"><label>Comissão (%)</label><input type="number" step="0.1" min="0" id="um-gab-pct" value="${um.gabrielyComissaoPct}"></div>
+        <div class="field" style="margin-top:8px"><label>Total vendido no mês (R$)</label><input type="number" step="0.01" min="0" id="um-gab-vendas" value="${um.gabrielyVendas}"></div>
+        <div style="margin-top:8px; font-size:13px">Comissão: <b id="um-total-comissao"></b> · Total: <b id="um-total-gab"></b></div>
+      </div>
+    </div>
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--line); font-size:14px">Total geral do mês: <b id="um-total-geral"></b></div>
+  `;
+  const campos = [
+    ["um-prolabore16","proLabore16"], ["um-prolabore01","proLabore01"],
+    ["um-gab-base","gabrielyBase"], ["um-gab-pct","gabrielyComissaoPct"], ["um-gab-vendas","gabrielyVendas"]
+  ];
+  campos.forEach(([id,chave])=>{
+    document.getElementById(id).addEventListener("input", e=>{
+      const mk = mesKeyDashboard();
+      urbanMixDoMes(mk)[chave] = parseFloat(e.target.value)||0;
+      salvarDB();
+      atualizarTotaisUrbanMix();
+    });
+  });
+  atualizarTotaisUrbanMix();
+}
+function atualizarTotaisUrbanMix(){
+  const um = urbanMixDoMes(mesKeyDashboard());
+  const proLaboreTotal = (parseFloat(um.proLabore16)||0) + (parseFloat(um.proLabore01)||0);
+  const comissaoValor = (parseFloat(um.gabrielyVendas)||0) * ((parseFloat(um.gabrielyComissaoPct)||0)/100);
+  const gabrielyTotal = (parseFloat(um.gabrielyBase)||0) + comissaoValor;
+  document.getElementById("um-total-prolabore").textContent = fmtBRL(proLaboreTotal);
+  document.getElementById("um-total-comissao").textContent = fmtBRL(comissaoValor);
+  document.getElementById("um-total-gab").textContent = fmtBRL(gabrielyTotal);
+  document.getElementById("um-total-geral").textContent = fmtBRL(proLaboreTotal + gabrielyTotal);
 }
 function renderAlertaAtrasados(){
   const hoje = hojeISO();
