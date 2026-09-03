@@ -350,6 +350,7 @@ canvas.chart{width:100%;display:block}
         <button data-view="reformas">🔨 Casa / Reformas</button>
         <button data-view="luxos">🍕 Luxos</button>
         <button data-view="guardaroupa">👕 Guarda-roupa</button>
+        <button data-view="estetica">💅 Estética</button>
         <button data-view="metas">🎯 Sonhos e Metas</button>
       </nav>
     </div>
@@ -397,6 +398,11 @@ canvas.chart{width:100%;display:block}
         </div>
         <button class="btn ghost sm" id="dash-limpar-periodo">Usar mês</button>
       </div>
+    </div>
+
+    <div class="card" id="reserva-card">
+      <h3>🛟 Reserva de Emergência</h3>
+      <div id="reserva-corpo"></div>
     </div>
 
     <div class="card" id="urban-mix-card">
@@ -517,10 +523,20 @@ canvas.chart{width:100%;display:block}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <h3 style="margin-bottom:0">Carrinho</h3>
-        <button class="btn primary" id="lista-finalizar">Finalizar compra</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn ghost" id="lista-imprimir">🖨️ Imprimir lista</button>
+          <button class="btn primary" id="lista-finalizar">Finalizar compra</button>
+        </div>
       </div>
       <div class="chipbar" id="lista-filtro-sub" style="margin-bottom:14px"></div>
       <div id="lista-itens"></div>
+    </div>
+
+    <div class="card">
+      <details id="lista-comuns-details">
+        <summary style="cursor:pointer; font-family:var(--disp); font-weight:600; font-size:16px; color:var(--ink)">📋 Itens comuns — toque para adicionar rápido</summary>
+        <div id="lista-comuns-corpo" style="margin-top:14px"></div>
+      </details>
     </div>
 
     <div class="card">
@@ -666,6 +682,29 @@ canvas.chart{width:100%;display:block}
       </form>
     </div>
     <div class="card"><h3>Histórico</h3><div class="tblwrap"><table id="tbl-gr"><thead><tr><th>Data</th><th>Peça</th><th>Categoria</th><th>Valor</th><th>Quem pagou</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div></div>
+  </section>
+
+  <!-- ===================== ESTÉTICA ===================== -->
+  <section class="view" id="view-estetica">
+    <div><h2 class="pagetitle">💅 Estética</h2><p class="pagesub">Cabelo, unha e outros cuidados pessoais de cada um.</p></div>
+    <div class="tip"><span class="ic">💅</span> Alterne entre Ícaro e Gabrielly logo abaixo.</div>
+    <div class="subnav" id="est-subnav">
+      <button data-quem="Ícaro" aria-pressed="true">Ícaro</button>
+      <button data-quem="Gabrielly">Gabrielly</button>
+    </div>
+    <div class="grid g3" id="est-stats"></div>
+    <div class="card">
+      <h3>Novo gasto</h3>
+      <form id="form-estetica" class="formgrid">
+        <div class="field full"><label>Descrição</label><input required name="desc" placeholder="Ex: Corte + escova"></div>
+        <div class="field"><label>Tipo</label><select name="sub"><option>Cabelo</option><option>Unha</option><option>Depilação</option><option>Skincare</option><option>Barba</option><option>Massagem</option><option>Outros</option></select></div>
+        <div class="field"><label>Valor (R$)</label><input required type="number" step="0.01" min="0" name="valor"></div>
+        <div class="field"><label>Data</label><input required type="date" name="data"></div>
+        <div class="field"><label>Quem pagou</label><select name="quemPagou"><option>Ícaro</option><option>Gabrielly</option><option selected>Ambos</option></select></div>
+        <div class="field full" style="flex-direction:row;justify-content:flex-end"><button class="btn primary" type="submit">Adicionar</button></div>
+      </form>
+    </div>
+    <div class="card"><h3>Histórico</h3><div class="tblwrap"><table id="tbl-estetica"><thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Quem pagou</th><th></th></tr></thead><tbody></tbody></table></div></div>
   </section>
 
   <!-- ===================== METAS ===================== -->
@@ -861,7 +900,8 @@ function dbPadrao(){
     contasFixas: [],           // {id,nome,categoria,historico:[{valor,data}]}
     projetos: [],              // {id,nome,orcamento,gasto,data,tipo,prioridade,status,gastos:[{desc,valor,data}]}
     metas: [],                 // {id,nome,descricao,valorNecessario,dataDesejada,categoria,prioridade,responsavel,status,aportes:[{valor,data}]}
-    urbanMix: {}               // {"YYYY-MM": {proLabore16, proLabore01, gabrielyBase, gabrielyComissaoPct, gabrielyVendas}}
+    urbanMix: {},              // {"YYYY-MM": {proLabore16, proLabore01, gabrielyBase, gabrielyComissaoPct, gabrielyVendas}}
+    reservaEmergencia: {valor:0, historico:[]}  // {valor, historico:[{valor,data,obs}]} — saldo atual + registro de mudanças
   };
 }
 const instalacaoNova = !localStorage.getItem(DB_KEY);
@@ -1062,10 +1102,11 @@ function mesLabel(ym){
   return nomes[m-1]+"/"+String(y).slice(2);
 }
 
-const CATEGORIAS = ["Casa","Mercado","Feira","Pets","Saúde","Carro","Reformas","Luxos","Guarda-roupa Ícaro","Guarda-roupa Gabrielly","Sonhos e Metas","Outros","Renda"];
+const CATEGORIAS = ["Casa","Mercado","Feira","Pets","Saúde","Carro","Reformas","Luxos","Guarda-roupa Ícaro","Guarda-roupa Gabrielly","Estética Ícaro","Estética Gabrielly","Sonhos e Metas","Outros","Renda"];
 const CORES_CAT = {
   "Casa":"#2F6FED","Mercado":"#F45B94","Feira":"#1F9A6C","Pets":"#C98A1E","Saúde":"#2FA6A0","Carro":"#7C4FD1",
   "Reformas":"#E0455C","Luxos":"#FF9F43","Guarda-roupa Ícaro":"#2F6FED","Guarda-roupa Gabrielly":"#F45B94",
+  "Estética Ícaro":"#7C4FD1","Estética Gabrielly":"#D1499E",
   "Sonhos e Metas":"#00B8A9","Outros":"#8A7484","Renda":"#1F9A6C"
 };
 
@@ -1237,7 +1278,31 @@ function renderDashboard(){
   ].map(([cat,lbl])=> statCard(lbl, fmtBRL(catTotal(cat)))).join("");
 
   renderAlertaAtrasados();
+  renderReserva();
   renderUrbanMix();
+}
+function renderReserva(){
+  if(!DB.reservaEmergencia) DB.reservaEmergencia = {valor:0, historico:[]};
+  const r = DB.reservaEmergencia;
+  document.getElementById("reserva-corpo").innerHTML = `
+    <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:14px">
+      <div style="font-family:var(--disp); font-size:32px; font-weight:600; color:var(--green)">${fmtBRL(r.valor)}</div>
+      <span style="font-size:12px; color:var(--dim)">saldo guardado hoje</span>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+      <div class="field"><label>Ajustar valor atual (R$)</label><input type="number" step="0.01" min="0" id="reserva-valor" value="${r.valor}"></div>
+      <button class="btn ghost sm" id="reserva-salvar">Salvar</button>
+    </div>
+    ${r.historico.length? `<div style="margin-top:12px; font-size:12px; color:var(--dim)">Última atualização: ${fmtDataBR(r.historico[r.historico.length-1].data)}</div>` : ""}
+  `;
+  document.getElementById("reserva-salvar").addEventListener("click", ()=>{
+    const novoValor = parseFloat(document.getElementById("reserva-valor").value)||0;
+    DB.reservaEmergencia.valor = novoValor;
+    DB.reservaEmergencia.historico.push({valor:novoValor, data:hojeISO()});
+    salvarDB();
+    toast("Reserva atualizada ✓");
+    renderReserva();
+  });
 }
 function mesKeyDashboard(){
   return document.getElementById("dash-mes").value || mesAtual();
@@ -1512,7 +1577,69 @@ function renderListaItens(){
 function renderListaCompras(){
   renderListaStats();
   renderListaItens();
+  renderListaComuns();
 }
+const ITENS_COMUNS = {
+  "Essenciais": ["Arroz","Feijão","Açúcar","Sal","Óleo de soja","Café","Farinha de trigo","Macarrão","Leite"],
+  "Feira": ["Banana","Maçã","Tomate","Cebola","Alho","Batata","Alface","Laranja","Limão"],
+  "Mistura": ["Frango","Carne moída","Ovos","Linguiça","Peixe"],
+  "Dia a dia": ["Pão","Manteiga","Queijo","Presunto","Iogurte"],
+  "Besteiras": ["Refrigerante","Salgadinho","Biscoito","Chocolate","Sorvete"],
+  "Limpeza": ["Detergente","Sabão em pó","Amaciante","Água sanitária","Esponja de aço","Papel toalha"],
+  "Higiene": ["Papel higiênico","Sabonete","Shampoo","Pasta de dente","Absorvente"]
+};
+function renderListaComuns(){
+  const box = document.getElementById("lista-comuns-corpo");
+  box.innerHTML = Object.entries(ITENS_COMUNS).map(([cat,itens])=>`
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px">${cat}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${itens.map(nome=>`<button type="button" class="btn ghost sm" data-comum="${nome}" data-cat="${cat}">+ ${nome}</button>`).join("")}
+      </div>
+    </div>`).join("");
+  box.querySelectorAll("[data-comum]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const nome = btn.dataset.comum, cat = btn.dataset.cat;
+      const jaTem = DB.listaCatalogo.some(i=> i.nome.toLowerCase()===nome.toLowerCase() && !i.pegou);
+      if(jaTem){ toast(nome+" já está na lista"); return; }
+      const stats = statsProduto(DB.listaHistorico, nome);
+      const valorAtual = stats ? stats.regs[stats.regs.length-1].valor : 0;
+      DB.listaCatalogo.push({id:uid(), nome, categoria:cat, valorAtual, pegou:false});
+      salvarDB();
+      toast(nome+" adicionado ✓");
+      renderListaStats();
+      renderListaItens();
+    });
+  });
+}
+document.getElementById("lista-imprimir").addEventListener("click", ()=>{
+  const pendentes = DB.listaCatalogo.filter(i=>!i.pegou);
+  if(!pendentes.length){ toast("Não há itens pendentes na lista"); return; }
+  const porCategoria = {};
+  pendentes.forEach(i=>{ (porCategoria[i.categoria] ||= []).push(i); });
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Lista de Compras</title>
+    <style>
+      body{font-family:system-ui,sans-serif;padding:24px;color:#111}
+      h1{font-size:20px;margin-bottom:4px}
+      p{color:#666;font-size:13px;margin-top:0}
+      h2{font-size:14px;margin:18px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
+      ul{list-style:none;padding:0;margin:0}
+      li{padding:6px 0;font-size:14px;display:flex;align-items:center;gap:10px}
+      .box{width:14px;height:14px;border:1.5px solid #333;border-radius:3px;flex:none}
+    </style></head><body>
+    <h1>🛒 Lista de Compras</h1>
+    <p>${new Date().toLocaleDateString("pt-BR",{weekday:"long", day:"2-digit", month:"long", year:"numeric"})}</p>
+    ${Object.entries(porCategoria).map(([cat,itens])=>`
+      <h2>${cat}</h2>
+      <ul>${itens.map(i=>`<li><span class="box"></span>${i.nome}</li>`).join("")}</ul>
+    `).join("")}
+  </body></html>`;
+  const janela = window.open("", "_blank");
+  janela.document.write(html);
+  janela.document.close();
+  janela.focus();
+  janela.print();
+});
 function finalizarCompra(catalogoKey, historicoKey){
   const catalogo = DB[catalogoKey];
   const pegou = catalogo.filter(i=>i.pegou);
@@ -1591,6 +1718,7 @@ ligarFormSimples("form-saude","Saúde");
 ligarFormSimples("form-carro","Carro");
 ligarFormSimples("form-luxos","Luxos");
 ligarFormSimples("form-gr", null, f=>({categoria: "Guarda-roupa "+grPessoaAtual}));
+ligarFormSimples("form-estetica", null, f=>({categoria: "Estética "+estPessoaAtual}));
 
 const PETS_SUB = ["Ração","Petiscos","Higiene","Veterinário","Medicamentos","Outros"];
 const SAUDE_SUB = ["Remédio","Plano de saúde","Consulta","Exame","Dentista","Vacina","Outros"];
@@ -1707,6 +1835,22 @@ function renderGuardaRoupa(){
   }
   const s = statsPeriodoCategoria(categoria);
   document.getElementById("gr-stats").innerHTML = [
+    statCard("Gasto no mês", fmtBRL(s.doMes)), statCard("Gasto no ano", fmtBRL(s.doAno)), statCard("Total geral", fmtBRL(s.total))
+  ].join("");
+}
+
+let estPessoaAtual = "Ícaro";
+document.getElementById("est-subnav").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  estPessoaAtual = b.dataset.quem;
+  document.querySelectorAll("#est-subnav button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  renderEstetica();
+});
+function renderEstetica(){
+  const categoria = "Estética "+estPessoaAtual;
+  renderTabelaSimples("tbl-estetica", categoria);
+  const s = statsPeriodoCategoria(categoria);
+  document.getElementById("est-stats").innerHTML = [
     statCard("Gasto no mês", fmtBRL(s.doMes)), statCard("Gasto no ano", fmtBRL(s.doAno)), statCard("Total geral", fmtBRL(s.total))
   ].join("");
 }
@@ -2040,6 +2184,7 @@ function renderTudo(){
   renderReformas();
   renderLuxos();
   renderGuardaRoupa();
+  renderEstetica();
   renderMetas();
   renderRelatorios();
   renderComparacao();
