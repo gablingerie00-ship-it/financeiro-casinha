@@ -320,8 +320,7 @@ canvas.chart{width:100%;display:block}
       <input type="password" id="login-senha" placeholder="••••••••" style="width:100%; padding:10px 40px 10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg2); color:var(--ink); font-size:14px; box-sizing:border-box">
       <button type="button" id="btn-ver-senha" aria-label="Mostrar senha" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; padding:6px; color:var(--dim); line-height:1">👁️</button>
     </div>
-    <button id="btn-login" style="width:100%; padding:11px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--pink-deep),var(--blue-deep)); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-bottom:10px">Entrar</button>
-    <button id="btn-signup" style="width:100%; padding:11px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--ink); font-size:13px; cursor:pointer">Criar conta nova</button>
+    <button id="btn-login" style="width:100%; padding:11px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--pink-deep),var(--blue-deep)); color:#fff; font-weight:600; font-size:14px; cursor:pointer">Entrar</button>
   </div>
 </div>
 <div id="app-conteudo" style="display:none">
@@ -828,7 +827,6 @@ canvas.chart{width:100%;display:block}
   const erroBox = document.getElementById("login-erro");
   const infoBox = document.getElementById("login-info");
   const btnLogin = document.getElementById("btn-login");
-  const btnSignup = document.getElementById("btn-signup");
   const btnVerSenha = document.getElementById("btn-ver-senha");
 
   btnVerSenha.addEventListener("click", ()=>{
@@ -861,20 +859,6 @@ canvas.chart{width:100%;display:block}
     btnLogin.disabled = false; btnLogin.textContent = "Entrar";
     if(error){ mostrarErro(error.message.includes("Invalid") ? "E-mail ou senha incorretos." : error.message); return; }
     liberarApp();
-  });
-
-  btnSignup.addEventListener("click", async ()=>{
-    limparMsgs();
-    const email = inpEmail.value.trim();
-    const senha = inpSenha.value;
-    if(!email || !senha){ mostrarErro("Preencha e-mail e senha pra criar a conta."); return; }
-    if(senha.length < 6){ mostrarErro("A senha precisa ter pelo menos 6 caracteres."); return; }
-    btnSignup.disabled = true; btnSignup.textContent = "Criando…";
-    const {data, error} = await authClient.auth.signUp({email, password:senha});
-    btnSignup.disabled = false; btnSignup.textContent = "Criar conta nova";
-    if(error){ mostrarErro(error.message); return; }
-    if(data.session){ liberarApp(); return; }
-    mostrarInfo("Conta criada! Verifique seu e-mail para confirmar antes de entrar.");
   });
 
   [inpEmail, inpSenha].forEach(inp=> inp.addEventListener("keydown", e=>{ if(e.key === "Enter") btnLogin.click(); }));
@@ -976,9 +960,18 @@ function semearContasFixas(){
    SINCRONIZAÇÃO COM SUPABASE — mesma base de dados em qualquer aparelho
    ===================================================================== */
 const SYNC_KEY = "portal_financeiro_sync_config"; // {url, anonKey, codigo}
+const SYNC_PADRAO = {
+  url: "https://ikllhzwfjzfvqarqpoez.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrbGxoendmanpmdnFhcnFwb2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NTAwMDUsImV4cCI6MjEwNDAyNjAwNX0._DFZIcZ3BLimxt5aVttiq-qCbK4CbOUL04mdtSPxM7A",
+  codigo: "icaro-gabi-casa"
+};
 
 function carregarSyncConfig(){
-  try{ return JSON.parse(localStorage.getItem(SYNC_KEY)); }catch(e){ return null; }
+  try{
+    const salvo = JSON.parse(localStorage.getItem(SYNC_KEY));
+    if(salvo && salvo.url && salvo.anonKey && salvo.codigo) return salvo;
+  }catch(e){}
+  return SYNC_PADRAO;
 }
 function salvarSyncConfig(cfg){ localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); }
 
