@@ -841,9 +841,13 @@ canvas.chart{width:100%;display:block}
   function mostrarInfo(msg){ infoBox.textContent = msg; infoBox.style.display = "block"; erroBox.style.display = "none"; }
   function limparMsgs(){ erroBox.style.display = "none"; infoBox.style.display = "none"; }
 
+  let ultimaLiberacao = 0;
   function liberarApp(){
     gate.style.display = "none";
     app.style.display = "";
+    const agora = Date.now();
+    if(agora - ultimaLiberacao < 2000) return; // evita repetir a sincronização se o Supabase mandar vários avisos seguidos
+    ultimaLiberacao = agora;
     if(typeof iniciarSync === "function") iniciarSync();
   }
   function pedirLogin(){
@@ -887,7 +891,7 @@ canvas.chart{width:100%;display:block}
 /* =====================================================================
    BANCO DE DADOS (localStorage)
    ===================================================================== */
-let supabaseClient = null;
+// (conexão com o Supabase agora é uma só — window.__authClient — evita conflito de sessão salva no navegador)
 let syncEnvioTimeout = null;
 const DB_KEY = "portal_financeiro_icaro_gabrielly_v1";
 const OCULTAR_VALORES_KEY = "portal_financeiro_ocultar_valores";
@@ -985,7 +989,9 @@ function atualizarStatusSync(estado, msg){
   btn.title = msg || "";
 }
 
+let sincronizandoAgora = false;
 async function iniciarSync(){
+  if(sincronizandoAgora) return;
   const cfg = carregarSyncConfig();
   if(!cfg || !cfg.url || !cfg.anonKey || !cfg.codigo){
     atualizarStatusSync(null, "Sincronização não configurada — dados só neste aparelho");
@@ -995,16 +1001,12 @@ async function iniciarSync(){
     atualizarStatusSync("err", "Sem internet — usando os dados salvos neste aparelho");
     return;
   }
+  sincronizandoAgora = true;
   try{
     atualizarStatusSync("loading", "Conectando ao Supabase...");
-    supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
-    if(window.__authClient){
-      const {data:sessData} = await window.__authClient.auth.getSession();
-      if(sessData && sessData.session){
-        await supabaseClient.auth.setSession({access_token: sessData.session.access_token, refresh_token: sessData.session.refresh_token});
-      }
-    }
-    const {data, error} = await supabaseClient.from("portal_dados").select("dados").eq("id", cfg.codigo).maybeSingle();
+    if(!window.__authClient){ atualizarStatusSync("err", "Aguardando login..."); return; }
+    const cliente = window.__authClient;
+    const {data, error} = await cliente.from("portal_dados").select("dados").eq("id", cfg.codigo).maybeSingle();
     if(error) throw error;
     if(data && data.dados){
       DB = Object.assign(dbPadrao(), data.dados);
@@ -1017,14 +1019,16 @@ async function iniciarSync(){
   }catch(e){
     console.error(e);
     atualizarStatusSync("err", "Erro ao conectar ao Supabase — usando os dados salvos neste aparelho");
+  }finally{
+    sincronizandoAgora = false;
   }
 }
 async function enviarParaSupabase(){
   const cfg = carregarSyncConfig();
-  if(!supabaseClient || !cfg) return;
+  if(!window.__authClient || !cfg) return;
   try{
     atualizarStatusSync("loading", "Salvando na nuvem...");
-    const {error} = await supabaseClient.from("portal_dados").upsert({id:cfg.codigo, dados:DB, atualizado_em:new Date().toISOString()});
+    const {error} = await window.__authClient.from("portal_dados").upsert({id:cfg.codigo, dados:DB, atualizado_em:new Date().toISOString()});
     if(error) throw error;
     atualizarStatusSync("ok", "Sincronizado com o Supabase — código: "+cfg.codigo);
   }catch(e){
@@ -1033,7 +1037,7 @@ async function enviarParaSupabase(){
   }
 }
 function agendarEnvioSupabase(){
-  if(!supabaseClient) return;
+  if(!window.__authClient) return;
   clearTimeout(syncEnvioTimeout);
   atualizarStatusSync("loading", "Salvando na nuvem...");
   syncEnvioTimeout = setTimeout(enviarParaSupabase, 900);
@@ -1056,12 +1060,11 @@ document.getElementById("form-sync").addEventListener("submit", async e=>{
   const erro = document.getElementById("sync-erro");
   erro.textContent = "Conectando...";
   try{
-    if(!window.supabase) throw new Error("Biblioteca do Supabase não carregou — verifique sua internet.");
-    const cliente = window.supabase.createClient(cfg.url, cfg.anonKey);
+    if(!window.__authClient) throw new Error("Login ainda não carregou — tente novamente em instantes.");
+    const cliente = window.__authClient;
     const {data, error} = await cliente.from("portal_dados").select("dados").eq("id", cfg.codigo).maybeSingle();
     if(error) throw error;
     salvarSyncConfig(cfg);
-    supabaseClient = cliente;
     if(data && data.dados){
       DB = Object.assign(dbPadrao(), data.dados);
       salvarLocalSemSync();
