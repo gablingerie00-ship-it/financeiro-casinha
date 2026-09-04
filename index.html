@@ -382,6 +382,7 @@ canvas.chart{width:100%;display:block}
         <h3>📖 Palavra do dia</h3>
         <p class="versiculo-txt" id="versiculo-txt">—</p>
         <p class="versiculo-ref" id="versiculo-ref"></p>
+        <div id="versiculo-musica" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim)"></div>
       </div>
       <div class="card">
         <h3>📅 Data, hora e tempo</h3>
@@ -412,7 +413,7 @@ canvas.chart{width:100%;display:block}
     </div>
 
     <div class="card" id="reserva-card">
-      <h3>🛟 Reserva de Emergência</h3>
+      <h3>🐷 Reserva de Emergência</h3>
       <div id="reserva-corpo"></div>
     </div>
 
@@ -1303,17 +1304,25 @@ function renderDashboard(){
 function renderReserva(){
   if(!DB.reservaEmergencia) DB.reservaEmergencia = {valor:0, historico:[]};
   const r = DB.reservaEmergencia;
+  const temHistorico = r.historico.length>=2;
   document.getElementById("reserva-corpo").innerHTML = `
     <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:14px">
       <div style="font-family:var(--disp); font-size:32px; font-weight:600; color:var(--green)" class="valor-sensivel">${fmtBRL(r.valor)}</div>
       <span style="font-size:12px; color:var(--dim)">saldo guardado hoje</span>
     </div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px">
       <div class="field"><label>Ajustar valor atual (R$)</label><input type="number" step="0.01" min="0" id="reserva-valor" value="${r.valor}"></div>
       <button class="btn ghost sm" id="reserva-salvar">Salvar</button>
     </div>
-    ${r.historico.length? `<div style="margin-top:12px; font-size:12px; color:var(--dim)">Última atualização: ${fmtDataBR(r.historico[r.historico.length-1].data)}</div>` : ""}
+    ${r.historico.length? `<div style="margin-bottom:10px; font-size:12px; color:var(--dim)">Última atualização: ${fmtDataBR(r.historico[r.historico.length-1].data)}</div>` : ""}
+    ${temHistorico
+      ? `<canvas id="reserva-chart" class="valor-sensivel" style="width:100%; height:140px"></canvas>`
+      : `<div class="empty" style="font-size:12.5px">A evolução da caixinha aparece aqui assim que tiver pelo menos 2 atualizações de valor.</div>`}
   `;
+  if(temHistorico){
+    const ultimos = r.historico.slice(-8);
+    desenharBarras(document.getElementById("reserva-chart"), ultimos.map(h=>h.valor), ultimos.map(h=>fmtDataBR(h.data).slice(0,5)), "#1F9A6C");
+  }
   document.getElementById("reserva-salvar").addEventListener("click", ()=>{
     const novoValor = parseFloat(document.getElementById("reserva-valor").value)||0;
     DB.reservaEmergencia.valor = novoValor;
@@ -2243,33 +2252,33 @@ window.addEventListener("resize", ()=>{ renderLuxos(); renderRelatorios(); });
    PALAVRA DO DIA — texto de domínio público (Almeida), muda todo dia
    ===================================================================== */
 const VERSICULOS = [
-  { txt:"Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", ref:"Salmos 37:5" },
-  { txt:"Posso todas as coisas em Cristo que me fortalece.", ref:"Filipenses 4:13" },
-  { txt:"Esforça-te, e tem bom ânimo; não pasmes, nem te espantes, porque o Senhor teu Deus é contigo, por onde quer que andares.", ref:"Josué 1:9" },
-  { txt:"Confia no Senhor de todo o teu coração, e não te estribes no teu próprio entendimento.", ref:"Provérbios 3:5" },
-  { txt:"Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus; eu te fortaleço, e te ajudo.", ref:"Isaías 41:10" },
-  { txt:"O Senhor é o meu pastor; nada me faltará.", ref:"Salmos 23:1" },
-  { txt:"Buscai, pois, primeiro o reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.", ref:"Mateus 6:33" },
-  { txt:"O coração do homem propõe o seu caminho, mas o Senhor lhe dirige os passos.", ref:"Provérbios 16:9" },
-  { txt:"Este é o dia que o Senhor fez; regozijemo-nos, e alegremo-nos nele.", ref:"Salmos 118:24" },
-  { txt:"E tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.", ref:"Colossenses 3:23" },
-  { txt:"E não nos cansemos de fazer o bem, porque a seu tempo ceifaremos, se não desfalecermos.", ref:"Gálatas 6:9" },
-  { txt:"Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.", ref:"Eclesiastes 9:10" },
-  { txt:"Não estejais inquietos por coisa alguma; antes as vossas petições sejam em tudo conhecidas diante de Deus.", ref:"Filipenses 4:6" },
-  { txt:"Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.", ref:"Salmos 46:1" },
-  { txt:"O que trabalha com mão remissa empobrece, mas a mão dos diligentes enriquece.", ref:"Provérbios 10:4" },
-  { txt:"E sabemos que todas as coisas contribuem juntamente para o bem daqueles que amam a Deus.", ref:"Romanos 8:28" },
-  { txt:"Se algum de vós tem falta de sabedoria, peça-a a Deus, que a todos dá liberalmente.", ref:"Tiago 1:5" },
-  { txt:"Seja sobre nós a formosura do Senhor nosso Deus, e confirma sobre nós a obra das nossas mãos.", ref:"Salmos 90:17" },
-  { txt:"Os pensamentos do diligente tendem só para a abundância, mas os de todo apressado tendem à pobreza.", ref:"Provérbios 21:5" },
-  { txt:"Lembra-te do Senhor teu Deus, porque ele é o que te dá força para adquirires riquezas.", ref:"Deuteronômio 8:18" },
-  { txt:"Se o Senhor não edificar a casa, em vão trabalham os que a edificam.", ref:"Salmos 127:1" },
-  { txt:"Quem é fiel no pouco, também é fiel no muito.", ref:"Lucas 16:10" },
-  { txt:"Contentai-vos com as coisas presentes; porque ele disse: Não te deixarei, nem te desampararei.", ref:"Hebreus 13:5" },
-  { txt:"Com sabedoria se edifica a casa, e com inteligência se estabelece.", ref:"Provérbios 24:3" },
-  { txt:"Deus é poderoso para fazer abundar em vós toda a graça, a fim de que abundeis em toda a boa obra.", ref:"2 Coríntios 9:8" },
-  { txt:"Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.", ref:"Eclesiastes 3:1" },
-  { txt:"Porque para Deus nada é impossível.", ref:"Lucas 1:37" }
+  { txt:"Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", ref:"Salmos 37:5", musica:"Ainda Que a Figueira Não Floresça — Nívea Soares" },
+  { txt:"Posso todas as coisas em Cristo que me fortalece.", ref:"Filipenses 4:13", musica:"Posso Todas as Coisas — Anderson Freire" },
+  { txt:"Esforça-te, e tem bom ânimo; não pasmes, nem te espantes, porque o Senhor teu Deus é contigo, por onde quer que andares.", ref:"Josué 1:9", musica:"Coragem — Aline Barros" },
+  { txt:"Confia no Senhor de todo o teu coração, e não te estribes no teu próprio entendimento.", ref:"Provérbios 3:5", musica:"Confiarei — Gabriela Rocha" },
+  { txt:"Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus; eu te fortaleço, e te ajudo.", ref:"Isaías 41:10", musica:"Deus Cuidará de Ti — hino tradicional" },
+  { txt:"O Senhor é o meu pastor; nada me faltará.", ref:"Salmos 23:1", musica:"Salmo 23 — Gabriela Rocha" },
+  { txt:"Buscai, pois, primeiro o reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.", ref:"Mateus 6:33", musica:"Buscai Primeiro o Reino de Deus — coral tradicional" },
+  { txt:"O coração do homem propõe o seu caminho, mas o Senhor lhe dirige os passos.", ref:"Provérbios 16:9", musica:"Aos Teus Pés — Diante do Trono" },
+  { txt:"Este é o dia que o Senhor fez; regozijemo-nos, e alegremo-nos nele.", ref:"Salmos 118:24", musica:"Este É o Dia — coral tradicional" },
+  { txt:"E tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.", ref:"Colossenses 3:23", musica:"Tudo Que Tenho — Fernandinho" },
+  { txt:"E não nos cansemos de fazer o bem, porque a seu tempo ceifaremos, se não desfalecermos.", ref:"Gálatas 6:9", musica:"Não Vou Parar — Aline Barros" },
+  { txt:"Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.", ref:"Eclesiastes 9:10", musica:"Vaso de Barro — Kleber Lucas" },
+  { txt:"Não estejais inquietos por coisa alguma; antes as vossas petições sejam em tudo conhecidas diante de Deus.", ref:"Filipenses 4:6", musica:"Deus Cuida de Mim — Preto no Branco" },
+  { txt:"Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.", ref:"Salmos 46:1", musica:"Refúgio e Fortaleza — Diante do Trono" },
+  { txt:"O que trabalha com mão remissa empobrece, mas a mão dos diligentes enriquece.", ref:"Provérbios 10:4", musica:"Fidelidade — Fernandinho" },
+  { txt:"E sabemos que todas as coisas contribuem juntamente para o bem daqueles que amam a Deus.", ref:"Romanos 8:28", musica:"Deus é Deus — Delino Marçal" },
+  { txt:"Se algum de vós tem falta de sabedoria, peça-a a Deus, que a todos dá liberalmente.", ref:"Tiago 1:5", musica:"Vem, Espírito Santo — diversos hinários" },
+  { txt:"Seja sobre nós a formosura do Senhor nosso Deus, e confirma sobre nós a obra das nossas mãos.", ref:"Salmos 90:17", musica:"Bondade de Deus — Isaías Saad" },
+  { txt:"Os pensamentos do diligente tendem só para a abundância, mas os de todo apressado tendem à pobreza.", ref:"Provérbios 21:5", musica:"Vencedor — Kleber Lucas" },
+  { txt:"Lembra-te do Senhor teu Deus, porque ele é o que te dá força para adquirires riquezas.", ref:"Deuteronômio 8:18", musica:"Deus Proverá — Aline Barros" },
+  { txt:"Se o Senhor não edificar a casa, em vão trabalham os que a edificam.", ref:"Salmos 127:1", musica:"Ele Não Erra — Fernandinho" },
+  { txt:"Quem é fiel no pouco, também é fiel no muito.", ref:"Lucas 16:10", musica:"Fidelidade — Diante do Trono" },
+  { txt:"Contentai-vos com as coisas presentes; porque ele disse: Não te deixarei, nem te desampararei.", ref:"Hebreus 13:5", musica:"Grande É a Tua Fidelidade — hino tradicional" },
+  { txt:"Com sabedoria se edifica a casa, e com inteligência se estabelece.", ref:"Provérbios 24:3", musica:"Casa Alicerçada Sobre a Rocha — música cristã tradicional" },
+  { txt:"Deus é poderoso para fazer abundar em vós toda a graça, a fim de que abundeis em toda a boa obra.", ref:"2 Coríntios 9:8", musica:"Graça Sobre Graça — Fernanda Brum" },
+  { txt:"Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.", ref:"Eclesiastes 3:1", musica:"O Tempo de Deus é Perfeito — Preto no Branco" },
+  { txt:"Porque para Deus nada é impossível.", ref:"Lucas 1:37", musica:"Deus de Impossíveis — Preto no Branco" }
 ];
 function diaDoAno(d){ const inicio = new Date(d.getFullYear(),0,0); return Math.floor((d-inicio)/86400000); }
 function renderVersiculo(){
@@ -2277,6 +2286,7 @@ function renderVersiculo(){
   const v = VERSICULOS[diaDoAno(hoje) % VERSICULOS.length];
   document.getElementById("versiculo-txt").textContent = "“"+v.txt+"”";
   document.getElementById("versiculo-ref").textContent = v.ref;
+  document.getElementById("versiculo-musica").innerHTML = v.musica ? "🎵 Música relacionada: <b>"+v.musica+"</b>" : "";
 }
 renderVersiculo();
 
