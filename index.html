@@ -2245,40 +2245,44 @@ function renderTudo(){
 document.querySelectorAll('input[type="date"]').forEach(inp=>{ if(!inp.value) inp.value = hojeISO(); });
 
 renderTudo();
-window.addEventListener("resize", ()=>{ renderLuxos(); renderRelatorios(); });
+let resizeTimeout = null;
+window.addEventListener("resize", ()=>{
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(()=>{ renderLuxos(); renderRelatorios(); }, 200);
+});
 // A sincronização agora só começa depois que o login é confirmado (veja liberarApp() no bloco de autenticação)
 
 /* =====================================================================
    PALAVRA DO DIA — texto de domínio público (Almeida), muda todo dia
    ===================================================================== */
 const VERSICULOS = [
-  { txt:"Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", ref:"Salmos 37:5", musica:"Ainda Que a Figueira Não Floresça — Nívea Soares" },
-  { txt:"Posso todas as coisas em Cristo que me fortalece.", ref:"Filipenses 4:13", musica:"Posso Todas as Coisas — Anderson Freire" },
-  { txt:"Esforça-te, e tem bom ânimo; não pasmes, nem te espantes, porque o Senhor teu Deus é contigo, por onde quer que andares.", ref:"Josué 1:9", musica:"Coragem — Aline Barros" },
-  { txt:"Confia no Senhor de todo o teu coração, e não te estribes no teu próprio entendimento.", ref:"Provérbios 3:5", musica:"Confiarei — Gabriela Rocha" },
-  { txt:"Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus; eu te fortaleço, e te ajudo.", ref:"Isaías 41:10", musica:"Deus Cuidará de Ti — hino tradicional" },
-  { txt:"O Senhor é o meu pastor; nada me faltará.", ref:"Salmos 23:1", musica:"Salmo 23 — Gabriela Rocha" },
-  { txt:"Buscai, pois, primeiro o reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.", ref:"Mateus 6:33", musica:"Buscai Primeiro o Reino de Deus — coral tradicional" },
-  { txt:"O coração do homem propõe o seu caminho, mas o Senhor lhe dirige os passos.", ref:"Provérbios 16:9", musica:"Aos Teus Pés — Diante do Trono" },
-  { txt:"Este é o dia que o Senhor fez; regozijemo-nos, e alegremo-nos nele.", ref:"Salmos 118:24", musica:"Este É o Dia — coral tradicional" },
-  { txt:"E tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.", ref:"Colossenses 3:23", musica:"Tudo Que Tenho — Fernandinho" },
-  { txt:"E não nos cansemos de fazer o bem, porque a seu tempo ceifaremos, se não desfalecermos.", ref:"Gálatas 6:9", musica:"Não Vou Parar — Aline Barros" },
-  { txt:"Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.", ref:"Eclesiastes 9:10", musica:"Vaso de Barro — Kleber Lucas" },
-  { txt:"Não estejais inquietos por coisa alguma; antes as vossas petições sejam em tudo conhecidas diante de Deus.", ref:"Filipenses 4:6", musica:"Deus Cuida de Mim — Preto no Branco" },
-  { txt:"Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.", ref:"Salmos 46:1", musica:"Refúgio e Fortaleza — Diante do Trono" },
-  { txt:"O que trabalha com mão remissa empobrece, mas a mão dos diligentes enriquece.", ref:"Provérbios 10:4", musica:"Fidelidade — Fernandinho" },
-  { txt:"E sabemos que todas as coisas contribuem juntamente para o bem daqueles que amam a Deus.", ref:"Romanos 8:28", musica:"Deus é Deus — Delino Marçal" },
-  { txt:"Se algum de vós tem falta de sabedoria, peça-a a Deus, que a todos dá liberalmente.", ref:"Tiago 1:5", musica:"Vem, Espírito Santo — diversos hinários" },
-  { txt:"Seja sobre nós a formosura do Senhor nosso Deus, e confirma sobre nós a obra das nossas mãos.", ref:"Salmos 90:17", musica:"Bondade de Deus — Isaías Saad" },
-  { txt:"Os pensamentos do diligente tendem só para a abundância, mas os de todo apressado tendem à pobreza.", ref:"Provérbios 21:5", musica:"Vencedor — Kleber Lucas" },
-  { txt:"Lembra-te do Senhor teu Deus, porque ele é o que te dá força para adquirires riquezas.", ref:"Deuteronômio 8:18", musica:"Deus Proverá — Aline Barros" },
-  { txt:"Se o Senhor não edificar a casa, em vão trabalham os que a edificam.", ref:"Salmos 127:1", musica:"Ele Não Erra — Fernandinho" },
-  { txt:"Quem é fiel no pouco, também é fiel no muito.", ref:"Lucas 16:10", musica:"Fidelidade — Diante do Trono" },
-  { txt:"Contentai-vos com as coisas presentes; porque ele disse: Não te deixarei, nem te desampararei.", ref:"Hebreus 13:5", musica:"Grande É a Tua Fidelidade — hino tradicional" },
-  { txt:"Com sabedoria se edifica a casa, e com inteligência se estabelece.", ref:"Provérbios 24:3", musica:"Casa Alicerçada Sobre a Rocha — música cristã tradicional" },
-  { txt:"Deus é poderoso para fazer abundar em vós toda a graça, a fim de que abundeis em toda a boa obra.", ref:"2 Coríntios 9:8", musica:"Graça Sobre Graça — Fernanda Brum" },
-  { txt:"Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.", ref:"Eclesiastes 3:1", musica:"O Tempo de Deus é Perfeito — Preto no Branco" },
-  { txt:"Porque para Deus nada é impossível.", ref:"Lucas 1:37", musica:"Deus de Impossíveis — Preto no Branco" }
+  { txt:"Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", ref:"Salmos 37:5", musica:"Preciso de Ti — Diante do Trono" },
+  { txt:"Posso todas as coisas em Cristo que me fortalece.", ref:"Filipenses 4:13", musica:"Águas Purificadoras — Diante do Trono" },
+  { txt:"Esforça-te, e tem bom ânimo; não pasmes, nem te espantes, porque o Senhor teu Deus é contigo, por onde quer que andares.", ref:"Josué 1:9", musica:"Eu Só Posso Imaginar — Diante do Trono" },
+  { txt:"Confia no Senhor de todo o teu coração, e não te estribes no teu próprio entendimento.", ref:"Provérbios 3:5", musica:"Poder do Teu Amor — Diante do Trono" },
+  { txt:"Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus; eu te fortaleço, e te ajudo.", ref:"Isaías 41:10", musica:"Jesus — Gabriela Rocha" },
+  { txt:"O Senhor é o meu pastor; nada me faltará.", ref:"Salmos 23:1", musica:"Ainda Que a Figueira Não Floresça — Gabriela Rocha" },
+  { txt:"Buscai, pois, primeiro o reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.", ref:"Mateus 6:33", musica:"Lugar Secreto — Gabriela Rocha" },
+  { txt:"O coração do homem propõe o seu caminho, mas o Senhor lhe dirige os passos.", ref:"Provérbios 16:9", musica:"Enche-me — Gabriela Rocha" },
+  { txt:"Este é o dia que o Senhor fez; regozijemo-nos, e alegremo-nos nele.", ref:"Salmos 118:24", musica:"Bênçãos Que Não Têm Fim — Isadora Pompeo" },
+  { txt:"E tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.", ref:"Colossenses 3:23", musica:"Espelho de Deus — Isadora Pompeo" },
+  { txt:"E não nos cansemos de fazer o bem, porque a seu tempo ceifaremos, se não desfalecermos.", ref:"Gálatas 6:9", musica:"Ousado Amor — Isaías Saad" },
+  { txt:"Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.", ref:"Eclesiastes 9:10", musica:"Bondade de Deus — Isaías Saad" },
+  { txt:"Não estejais inquietos por coisa alguma; antes as vossas petições sejam em tudo conhecidas diante de Deus.", ref:"Filipenses 4:6", musica:"Faz Chover — Fernandinho" },
+  { txt:"Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.", ref:"Salmos 46:1", musica:"Grandes Coisas — Fernandinho" },
+  { txt:"O que trabalha com mão remissa empobrece, mas a mão dos diligentes enriquece.", ref:"Provérbios 10:4", musica:"Ele Vive — Fernandinho" },
+  { txt:"E sabemos que todas as coisas contribuem juntamente para o bem daqueles que amam a Deus.", ref:"Romanos 8:28", musica:"Um Filho Teu — Ministério Zoe" },
+  { txt:"Se algum de vós tem falta de sabedoria, peça-a a Deus, que a todos dá liberalmente.", ref:"Tiago 1:5", musica:"Vim Te Adorar — Ministério Zoe" },
+  { txt:"Seja sobre nós a formosura do Senhor nosso Deus, e confirma sobre nós a obra das nossas mãos.", ref:"Salmos 90:17", musica:"Real — FHOP Music" },
+  { txt:"Os pensamentos do diligente tendem só para a abundância, mas os de todo apressado tendem à pobreza.", ref:"Provérbios 21:5", musica:"Aleluia — Casa Worship" },
+  { txt:"Lembra-te do Senhor teu Deus, porque ele é o que te dá força para adquirires riquezas.", ref:"Deuteronômio 8:18", musica:"Deus Não Está Morto — Preto no Branco" },
+  { txt:"Se o Senhor não edificar a casa, em vão trabalham os que a edificam.", ref:"Salmos 127:1", musica:"Deus de Impossíveis — Preto no Branco" },
+  { txt:"Quem é fiel no pouco, também é fiel no muito.", ref:"Lucas 16:10", musica:"Meu Sim — Bruna Karla" },
+  { txt:"Contentai-vos com as coisas presentes; porque ele disse: Não te deixarei, nem te desampararei.", ref:"Hebreus 13:5", musica:"Vou Te Adorar — Kleber Lucas" },
+  { txt:"Com sabedoria se edifica a casa, e com inteligência se estabelece.", ref:"Provérbios 24:3", musica:"Tua Graça Me Basta — Davi Sacer" },
+  { txt:"Deus é poderoso para fazer abundar em vós toda a graça, a fim de que abundeis em toda a boa obra.", ref:"2 Coríntios 9:8", musica:"Ele Sabe — Thalles Roberto" },
+  { txt:"Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.", ref:"Eclesiastes 3:1", musica:"Meu Mestre — Irmão Lázaro" },
+  { txt:"Porque para Deus nada é impossível.", ref:"Lucas 1:37", musica:"Chuvas de Deus — 2metro" }
 ];
 function diaDoAno(d){ const inicio = new Date(d.getFullYear(),0,0); return Math.floor((d-inicio)/86400000); }
 function renderVersiculo(){
@@ -2392,14 +2396,21 @@ document.getElementById("theme").addEventListener("click", e=>{
 });
 aplicarTema(localStorage.getItem(TEMA_KEY) || "escuro");
 
-/* brilho que acompanha o mouse dentro dos cards */
+/* brilho que acompanha o mouse dentro dos cards (otimizado com requestAnimationFrame pra não travar) */
+let glowRAF = null, glowUltimoEvento = null;
 document.addEventListener("pointermove", e=>{
-  const s = e.target.closest(".card,.stat");
-  if(s){
-    const r = s.getBoundingClientRect();
-    s.style.setProperty("--mx", ((e.clientX-r.left)/r.width*100)+"%");
-    s.style.setProperty("--my", ((e.clientY-r.top)/r.height*100)+"%");
-  }
+  glowUltimoEvento = e;
+  if(glowRAF) return;
+  glowRAF = requestAnimationFrame(()=>{
+    glowRAF = null;
+    const ev = glowUltimoEvento;
+    const s = ev.target.closest(".card,.stat");
+    if(s){
+      const r = s.getBoundingClientRect();
+      s.style.setProperty("--mx", ((ev.clientX-r.left)/r.width*100)+"%");
+      s.style.setProperty("--my", ((ev.clientY-r.top)/r.height*100)+"%");
+    }
+  });
 }, {passive:true});
 
 /* =====================================================================
