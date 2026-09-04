@@ -1469,7 +1469,7 @@ function renderContasFixas(){
         <button class="iconx" data-del-fixa="${c.id}" title="Excluir conta fixa">✕</button>
       </div>
       <div class="fixaline-form">
-        <input type="number" step="0.01" min="0" placeholder="Valor deste mês (R$)" data-f="valor">
+        <input type="number" step="0.01" min="0" placeholder="Valor deste mês (R$)" data-f="valor" value="${ultimo ? ultimo.valor : ''}">
         <input type="date" data-f="data" value="${hojeISO()}">
         <select data-f="quemPagou"><option>Ícaro</option><option>Gabrielly</option><option selected>Ambos</option></select>
         <button class="btn primary sm" data-registrar="${c.id}">Registrar pagamento</button>
