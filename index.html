@@ -843,6 +843,7 @@ canvas.chart{width:100%;display:block}
   function liberarApp(){
     gate.style.display = "none";
     app.style.display = "";
+    if(typeof iniciarSync === "function") iniciarSync();
   }
   function pedirLogin(){
     gate.style.display = "flex";
@@ -2236,7 +2237,7 @@ document.querySelectorAll('input[type="date"]').forEach(inp=>{ if(!inp.value) in
 
 renderTudo();
 window.addEventListener("resize", ()=>{ renderLuxos(); renderRelatorios(); });
-iniciarSync();
+// A sincronização agora só começa depois que o login é confirmado (veja liberarApp() no bloco de autenticação)
 
 /* =====================================================================
    PALAVRA DO DIA — texto de domínio público (Almeida), muda todo dia
